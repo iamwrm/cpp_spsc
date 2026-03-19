@@ -36,7 +36,7 @@ jobs:
           apt-get install -y --no-install-recommends \
             ${{ matrix.pkg }} cmake ninja-build git ca-certificates
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Configure
         run: |
@@ -69,7 +69,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload benchmark artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: benchmark-results-${{ matrix.compiler }}
           path: |
