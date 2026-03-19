@@ -1,0 +1,80 @@
+name: SPSC Benchmarks
+
+on:
+  push:
+    branches: [main, master, "claude/**"]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        compiler: [gcc-13, gcc-14, clang-18]
+        include:
+          - compiler: gcc-13
+            cc: gcc-13
+            cxx: g++-13
+            pkg: g++-13
+          - compiler: gcc-14
+            cc: gcc-14
+            cxx: g++-14
+            pkg: g++-14
+          - compiler: clang-18
+            cc: clang-18
+            cxx: clang++-18
+            pkg: clang-18
+
+    name: bench (${{ matrix.compiler }})
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.pkg }} cmake ninja-build
+
+      - name: Configure
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }}
+
+      - name: Build
+        run: cmake --build build -j$(nproc)
+
+      - name: Run throughput benchmark
+        run: ./build/spsc_bench --benchmark_format=json --benchmark_out=throughput.json
+
+      - name: Run latency benchmark
+        run: ./build/spsc_latency | tee latency.txt
+
+      - name: Print throughput results
+        run: |
+          echo "## Throughput (${{ matrix.compiler }})" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ./build/spsc_bench --benchmark_format=console 2>&1 | tee -a $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Print latency results
+        run: |
+          echo "## RTT Latency (${{ matrix.compiler }})" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat latency.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload benchmark artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ matrix.compiler }}
+          path: |
+            throughput.json
+            latency.txt
+          retention-days: 90
