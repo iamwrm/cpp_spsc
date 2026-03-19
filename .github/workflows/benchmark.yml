@@ -12,33 +12,31 @@ permissions:
 
 jobs:
   benchmark:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    container: debian:13
     strategy:
       matrix:
-        compiler: [gcc-13, gcc-14, clang-18]
+        compiler: [gcc-14, clang-19]
         include:
-          - compiler: gcc-13
-            cc: gcc-13
-            cxx: g++-13
-            pkg: g++-13
           - compiler: gcc-14
             cc: gcc-14
             cxx: g++-14
             pkg: g++-14
-          - compiler: clang-18
-            cc: clang-18
-            cxx: clang++-18
-            pkg: clang-18
+          - compiler: clang-19
+            cc: clang-19
+            cxx: clang++-19
+            pkg: clang-19
 
     name: bench (${{ matrix.compiler }})
 
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Install compiler
+      - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ${{ matrix.pkg }} cmake ninja-build
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ${{ matrix.pkg }} cmake ninja-build git ca-certificates
+
+      - uses: actions/checkout@v4
 
       - name: Configure
         run: |
