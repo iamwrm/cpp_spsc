@@ -24,6 +24,7 @@
 #include "readerwritercircularbuffer.h"
 #include "rigtorp/SPSCQueue.h"
 #include "atomic_queue/atomic_queue.h"
+#include "queue.hpp"  // ANDRVV/SPSCQueue
 
 static constexpr size_t QUEUE_CAPACITY = 1024;
 
@@ -101,7 +102,18 @@ static void BM_AtomicQueue(benchmark::State& state) {
 BENCHMARK(BM_AtomicQueue)->Arg(1 << 20)->Unit(benchmark::kMillisecond);
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5. C++20 DIY: rigtorp + std::counting_semaphore
+// 5. ANDRVV/SPSCQueue (spin-only, blocking push/pop)
+// ═══════════════════════════════════════════════════════════════════════════
+static void BM_ANDRVV(benchmark::State& state) {
+    SPSCQueue<uint64_t> q(QUEUE_CAPACITY);
+    RunThroughput(state,
+        [&](uint64_t v) { q.push(v); },
+        [&](uint64_t& v) { v = q.pop(); });
+}
+BENCHMARK(BM_ANDRVV)->Arg(1 << 20)->Unit(benchmark::kMillisecond);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 6. C++20 DIY: rigtorp + std::counting_semaphore
 // ═══════════════════════════════════════════════════════════════════════════
 template <typename T, size_t N>
 struct Channel {

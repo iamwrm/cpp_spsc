@@ -31,6 +31,14 @@ FetchContent_Declare(
     GIT_SHALLOW    TRUE
 )
 
+# ── ANDRVV/SPSCQueue ──
+FetchContent_Declare(
+    andrvv_spscqueue
+    GIT_REPOSITORY https://github.com/ANDRVV/SPSCQueue.git
+    GIT_TAG        main
+    GIT_SHALLOW    TRUE
+)
+
 # ── Google Benchmark ──
 FetchContent_Declare(
     benchmark
@@ -40,7 +48,7 @@ FetchContent_Declare(
 )
 set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(readerwriterqueue spscqueue atomic_queue benchmark)
+FetchContent_MakeAvailable(readerwriterqueue spscqueue atomic_queue andrvv_spscqueue benchmark)
 
 # ── Throughput benchmark ──
 add_executable(spsc_bench bench/spsc_bench.cpp)
@@ -48,6 +56,7 @@ target_include_directories(spsc_bench PRIVATE
     ${readerwriterqueue_SOURCE_DIR}
     ${spscqueue_SOURCE_DIR}/include
     ${atomic_queue_SOURCE_DIR}/include
+    "${andrvv_spscqueue_SOURCE_DIR}/src/c++"
 )
 target_link_libraries(spsc_bench PRIVATE benchmark::benchmark pthread)
 target_compile_options(spsc_bench PRIVATE -O3 -march=native -DNDEBUG)
@@ -58,6 +67,7 @@ target_include_directories(spsc_latency PRIVATE
     ${readerwriterqueue_SOURCE_DIR}
     ${spscqueue_SOURCE_DIR}/include
     ${atomic_queue_SOURCE_DIR}/include
+    "${andrvv_spscqueue_SOURCE_DIR}/src/c++"
 )
 target_link_libraries(spsc_latency PRIVATE pthread)
 target_compile_options(spsc_latency PRIVATE -O3 -march=native -DNDEBUG)
