@@ -27,6 +27,7 @@
 #include "readerwritercircularbuffer.h"
 #include "rigtorp/SPSCQueue.h"
 #include "atomic_queue/atomic_queue.h"
+#include "queue.hpp"  // ANDRVV/SPSCQueue
 
 static constexpr size_t QUEUE_CAPACITY = 1024;
 static constexpr int WARMUP = 1000;
@@ -142,7 +143,20 @@ void bench_atomic_queue() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 5. C++20 DIY Channel (rigtorp + counting_semaphore)
+// 5. ANDRVV/SPSCQueue (spin-only, blocking push/pop)
+// ═══════════════════════════════════════════════════════════════════════════
+void bench_andrvv() {
+    SPSCQueue<uint64_t> fwd(QUEUE_CAPACITY);
+    SPSCQueue<uint64_t> back(QUEUE_CAPACITY);
+    measure_rtt("ANDRVV/SPSCQueue",
+        [&](uint64_t v) { fwd.push(v); },
+        [&]() -> uint64_t { return fwd.pop(); },
+        [&](uint64_t v) { back.push(v); },
+        [&]() -> uint64_t { return back.pop(); });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 6. C++20 DIY Channel (rigtorp + counting_semaphore)
 // ═══════════════════════════════════════════════════════════════════════════
 template <typename T, size_t N>
 struct Channel {
@@ -214,6 +228,7 @@ int main() {
     bench_moodycamel_spin();
     bench_moodycamel_blocking();
     bench_atomic_queue();
+    bench_andrvv();
     bench_diy_channel();
     bench_mutex_queue();
 
